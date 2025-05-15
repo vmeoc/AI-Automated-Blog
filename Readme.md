@@ -1,135 +1,231 @@
-You are an agent helping at creating, deploying and advertising blog articles. As such you can:
-Read a google spreadsheet to know which article you need to create
-create blog articles
-Upload images on Internet
-update the blog content with an image
-Deploy blog articles in the blogger platform
-Send a post on LinkedIn with a catchy content, the blog URL and a picture
-Send a post on BlueSky with a catchy content and the blog URL
-Update the spreadsheet 
+# README – **Blog Factory Agent**
 
-Here are the details for each of these steps.
+This agent, executed through **Cline** in VS Code, automates operations to publish a blog post, promote it on social network and update a spreadsheet used to track the progress
+Before calling for you, the user will have created the project layout directory using setup_dir.js '<blog title>' and will have stored an image in the images directory with the size of 1200 pixels wide × 630 pixels high
 
-First, you need to read the .env file.
+**Publish** the post on Blogger.
+**Promote** it on LinkedIn (with image) and Bluesky (without image).
+**Update** the Google Sheet with all generated links and dates.
 
-#Read a google spreadsheet to know which article you need to create
-You are connected to the Google spreadhseet used to pilot the blog content. This connection is done through the zapier MCP (Model context protocol) where the tool name Lookup Spreadsheet Row allow you to find the row needed in the file. Use the information .env in this workspace to have all the necessary details to connect to this file. Fill all the needed input of the tool, not only the field "instructions". When the user ask you to work on a blog article, you will find the first row found with the status "unpublished" in the Status column, will give the content you found in the Title and Summary column. Based on this Title and summary, you will think of catchy titles for the blog articles. You will offer the 3 best ones you thought of so that the user can choose the on he prefers.
-You will store the row number of the file in <BlogTrackingFile> in a JSON format:
+All run‑time data for a given article lives in a single file: `BlogDataTracking.json` located in the article’s folder.
+
+When the user ask you something similar to:
+"Work on the blog <blog title>> you will find the correct <slug> directory in <userhome>/Documents/VS Code/Dev/AI Automated Blog/Blogs content. upload the image to Google Cloud, publish the blog to blogger, communicate on Bluesky and LinkedIn and update the spreadsheet.  Try to run everything in an automated way.
+
+---
+
+## 1  Project layout
+
+```
+<userhome>/Documents/VS Code/Dev/AI Automated Blog/Blogs content
+ └─ <slug>/                # lower‑case, no accents, words separated by dashes
+    ├─ blogContent.md       # markdown body (NO title line)
+    ├─ SocialNetworkPost.md # markdown body
+    ├─ BlogDataTracking.json# metadata generated during the workflow
+    └─ images/              # images you drop here from outside VS Code
+```
+
+---
+
+## 2  Environment variables (`.env`)
+
+```env
+# Google Cloud Storage
+BUCKET_NAME=chatbot-uploads-17191
+GOOGLE_APPLICATION_CREDENTIALS=key.json
+
+# Google Sheets
+GoogleSheetsAccount=shaunavmw@gmail.com
+Drive=My Google Drive
+Spreadsheet=1QPpaHXCfu5oHl8yu6WGls_sNGEQ_IpPMCjNPj8Hh-QI
+Worksheet=Feuille 1
+
+# Tracking file name (do NOT change)
+BlogTrackingFile=BlogDataTracking.json
+```
+You need to read the .env file
+
+> **Never** print secret values to the console or logs.
+
+---
+
+## 3  Available MCP tools
+
+| Provider | Tool name                              | Purpose                                            |
+| -------- | -------------------------------------- | -------------------------------------------------- |
+| Zapier   | `google_sheets_lookup_spreadsheet_row` | 
+| Zapier   | `google_sheets_update_spreadsheet_row` | Write publication info back to the sheet           |
+| Zapier   | `linkedin_create_share_update`         | Share on LinkedIn                                  |
+| Make     | `scenario_5079639_integration_blogger` | Publish to Blogger                                 |
+| Make     | `scenario_5116851_integration_bluesky` | Post on Bluesky                                    |
+
+Screenshots of the parameter lists are available above for quick reference.
+
+---
+
+## 4  Workflow in detail
+
+If the user give the row number of the blog in the spreadsheet file, Save the row number in `BlogDataTracking.json` :
+
+```json
+{ "sheetRow": 42 }
+```
+
+### 4.Upload image
+
+1.  The user has dropped images into `<slug>/images/`.
+2. Upload each file:
+
+   ```bash
+   node upload.js --file <slug>/images/hero.png
+   ```
+
+### 4.5 Embed a header image (optional)
+
+Once the previous step is done, 
+
+### 4.6 Publish on Blogger
+
+* Convert markdown → HTML by yourself. Do not use external tool. 
+* SEO Enhancements to apply during Markdown → HTML conversion
+**Add Meta Description**
+Insert a `<meta name="description" content="...">` tag inside the `<head>` section with a concise and keyword-rich summary of the article.
+**Apply Proper Heading Structure**
+Ensure only **one ************************`<h1>`************************ tag** is used (for the main title). Use `<h2>`, `<h3>`, etc., for subheadings to reflect the logical structure of the content.
+**SEO-Friendly URL Slug**
+If possible, use a clean and descriptive slug (e.g., `from-chat-to-action-gen-ai-revolution`) instead of generic or numeric suffixes.
+**de Alt Text for Images**
+For every `<img>` tag, include an `alt="..."` attribute with a relevant and descriptive phrase related to the blog content
+**Ensure Keyword Usage**
+   Maintain a **keyword density of around 1.3%** for the focus keyword, and include it within:
+
+   * The `<title>` tag
+   * The first 100 words
+   * At least one subheading
+   * The meta description
+**Mobile-Friendly Layout**
+     Ensure responsive HTML output (using `%`-based widths, flexible image styles) so the article displays properly on all screen sizes.
+
+* insert the following HTML snippet at the top  (replace `${url}` with the url of the image in the BlogDataTracking.json):
+
+```html
+<div class="separator" style="clear: both; text-align: center;">
+  <a href="${url}" imageanchor="1" style="margin-left: 1em; margin-right: 1em;">
+    <img border="0"
+         data-original-width="1200"
+         data-original-height="630"
+         width="100%"
+         style="max-width:1200px;height:auto;"
+         src="${url}" />
+  </a>
+</div>
+```
+* Call `scenario_5079639_integration_blogger`:
+
+  ```json
+  { "BlogTitle": "<approved title to retrieve from BlogDataTracking.json>", "BlogContent": "<HTML payload>" }
+  ```
+* Record the returned URL in `BlogDataTracking.json. If the URL is not returned by the tool, request it at the user
+
+  ```json
+  { "blogArticle": { "name": "<title>", "url": "https://..." } }
+  ```
+
+### 4.7 Share on LinkedIn (with image)
+
+Prepare the payload. For the content_description, use the file SocialNetworkPost.md:
+
+```json
 {
-  "ExcelFile": [
-    {
-      "RowNumber": "<rowNumber>"
-    }
-  ]
+  "instructions": "Share this article on LinkedIn",
+  "comment": "<catchy teaser>",
+  "visibility__code": "Anyone",
+  "content__title": "<title>",
+  "content__description": "<short description> to retrieve from SocialNetworkPost.md",
+  "content__submitted_image_url": "${images[0].url}",
+  "content__submitted_url": "${blogArticle.url}"
+}
+```
+
+Call `linkedin_create_share_update`. Then store the returned URL in **BlogDataTracking.json**:
+
+```json
+{ "linkedInPostUrl": "https://..." }
+```
+
+### 4.8 Post on Bluesky (no image)
+
+Prepare the payload. For the LinkDescription, use the file SocialNetworkPost.md:
+
+```json
+{
+  "PostContent": "<catchy teaser>",
+  "Link": "${blogArticle.url}",
+  "LinkTitle": "<title>",
+  "LinkDescription": "<short description to read from SocialNetworkPost.md>"
+}
+```
+
+Call `scenario_5116851_integration_bluesky`. Then start the script retrieveBlueSKyURL.js with the "AT_URI" as input like this
+node .\retrieveBlueSKyURL.js 'at://did:plc:b62m2vjha2t6p6jw7il6elpi/app.bsky.feed.post/3lp6jgpe4ug2z'
+It will return a URL like this:
+https://bsky.app/profile/tibhgh.bsky.social/post/3lp6jgpe4ug2z
+
+store the returned URL in **BlogDataTracking.json**:
+
+```json
+{ "blueSkyPostUrl": "https://..." }
+```
+
+### 4.9 Update the Google Sheet
+
+Use **`google_sheets_lookup_spreadsheet_row`** to search in the Google Spreadsheet the row number of the row containing the <title> (to extract from BlogDatatracking.json)
+```json
+{
+  "instructions": "Find the row in the worksheet 'Feuille 1' where the Title column equals 'From Chat to Action: The New Gen AI Revolution'.",
+  "drive": "My Google Drive",
+  "spreadsheet": "1QPpaHXCfu5oHl8yu6WGls_sNGEQ_IpPMCjNPj8Hh-QI",
+  "worksheet": "Feuille 1",
+  "lookup_key": "Title",
+  "lookup_value": "From Chat to Action: The New Gen AI Revolution"
+}
+```
+
+Use **`google_sheets_update_spreadsheet_row`**
+
+Example payload (the one that worked):
+
+```json
+{
+  {
+  "instructions": "Update row number 4 in the Google Sheet. The sheet is named 'Feuille 1', within spreadsheet ID '1QPpaHXCfu5oHl8yu6WGls_sNGEQ_IpPMCjNPj8Hh-QI', located in 'My Google Drive'. The data to update in this row is: set the 'Title' column to 'From Chat to Action: The New Gen AI Revolution', 'Summary' column to 'There are 2 new buzz words in the Gen AI space: Agents and MCP. ...', 'Status' column to 'Published', 'Date published' column to '15/5/25', 'Blog Link' column to 'https://vincent-ai.blogspot.com/2025/05/the-rise-of-action-based-ai-mastering.html', 'BlueSky Link' column to 'https://bsky.app/profile/tibhgh.bsky.social/post/3lp7zzlu4ti2z', and 'LinkedIn Link' column to 'https://www.linkedin.com/feed/update/urn:li:share:7328832988134937600/'.",
+  "drive": "My Google Drive",
+  "spreadsheet": "1QPpaHXCfu5oHl8yu6WGls_sNGEQ_IpPMCjNPj8Hh-QI",
+  "worksheet": "Feuille 1",
+  "row": "4",  
+  "Title": "From Chat to Action: The New Gen AI Revolution",
+  "Summary": "There are 2 new buzz words in the Gen AI space: Agents and MCP. ...",
+  "Status": "Published",
+  "Date published": "15/5/25",
+  "Blog Link": "https://vincent-ai.blogspot.com/2025/05/the-rise-of-action-based-ai-mastering.html",
+  "BlueSky Link": "https://bsky.app/profile/tibhgh.bsky.social/post/3lp7zzlu4ti2z",
+  "LinkedIn Link": "https://www.linkedin.com/feed/update/urn:li:share:7328832988134937600/"
 }
 
-#create a blog article
-If the user agree with the title, you will create this exact folder hierarchy:
-a folder with the blog title
-        a file in a md format with name blogContent.md 
-    
-Then, you will start creating the blog content. You will work iteratively with the user until he tells you the content is good and you can proceed to the next step. when you create the blog content, does not add the title since it's already in the root directy name.
+```
 
-#Upload images on Internet
-For the blog articles and the social network post, you may need to use images provided by the user. Images for the blog article will be in the folder named "blog article", images for the social networks will be in "Social network". To make this picture available for the blog article and social network you need to upload them using the tool/upload.js function. This function will send in Google Cloud storage the URL and will return the public URL for these pictures. This command syntax is node tool/upload.js --file <filePath>. In the blog directory you will create a "<BlogTrackingFile>" file where you will store the picture URL of each uploaded picture with the format:
-{
-  "images": [
-    {
-      "name": "techno_impressionism.jpg",
-      "url": "https://cdn.example.com/art/techno_impressionism.jpg"
-    }
-  ]
-}
+**JSON source mapping**
 
+| Column in Sheet | Field in `BlogDataTracking.json` |
+| --------------- | -------------------------------- |
+| Blog link       | `blogArticle.url`                |
+| Bluesky link    | `blueSkyPostUrl`                 |
+| LinkedIn link   | `linkedInPostUrl`                |
 
-#update the blog content with an image
-When requested by the user, modify the blog content to add a picture at the top of the blog post with the following format:
-<h1>
-  <div class="separator" style="clear: both; text-align: center;">
-    <a href="${url}"
-       imageanchor="1"
-       style="margin-left: 1em; margin-right: 1em;">
-      <img border="0"
-           data-original-height="1024"
-           data-original-width="1024"
-           height="400"
-           src="${url}"
-           width="400" />
-    </a>
-  </div>
-  <br />
-</h1>
-You'll need to use the $url from pictureURL.js. If there are several pictures, ask the user to choose.
+> Make sure the string contains **exactly the same number of columns** as your sheet, otherwise the update will fail.
 
+## 5  Error handling & fallback  Error handling & fallback
 
-#Deploy a blog article in the blogger platform
-If the user agreed on the content, you will turn yourself the content in html and you will use the Make MCP to access the blogger tool to deploy the blog article. If the operation succeed, you will return the blog URL to the user as well as copy the URL in <BlogTrackingFile> with the structure
-{
-  "blog article": [
-    {
-      "name": "<blog post name>,
-      "url": "<blog url>"
-    }
-  ]
-}
+> **If something goes wrong, report the error, analyse potential causes, and suggest concrete fixes.**
 
-#Send a post on LinkedIn with a catchy content, the blog URL and a picture
-Create a catchy post content based on the blog article and saved it in JSON format in <BlogTrackingFile>. If the user agree on the content, send it in LinkedIn with the following format:
-{
-  "instructions": "<the instruction you create>
-  "comment": "<catchy post content that you create>",
-  "visibility__code": "Anyone", 
-  "content__title": "<Title that you create>",
-  "content__description": "<content description that you create>",
-  "content__submitted_image_url": "<image url from <BlogTrackingFile>>",
-  "content__submitted_url": "<Blog post URL from <BlogTrackingFile>>"
-}
-If the operation is a success, save the LinkedIN post URL in <BlogTrackingFile> with the format
-{
-  "LinkedIn Post": [
-    {
-        "LinkedInPostUrl": "<LinkedIn Post url>"
-    }
-  ]
-}
-
-
-#Send a post on BlueSky with a catchy content and the blog URL
-If the file SocialNetwContentmd does not exist, create a catchy post content based on the blog article and saved it in JSON format in <BlogTrackingFile>. If the user agree on the content, send it in Bluesky with the following format:
-{
-  "PostContent": "<catchy post content that you created>",
-  "Link": "<blog post URL>",
-  "LinkTitle": "<catchy title that you create>",
-  "LinkDescription": "<catchy description that you create>"
-}
-If the operation is a success, save the LinkedIN post URL in <BlogTrackingFile> with the format
-{
-  "BlueSky Post": [
-    {
-        "BlueSkyPostUrl": "<BlueSky Post url>"
-    }
-  ]
-}
-
-
-#Update the spreadsheet 
-If all the actions were done with success, using the tool google_sheets_update_spreadsheet_row
-you are going to update the spreadsheet with the information from the .env and the <BlogTrackingFile> 
-In the spreadsheet modify the following column:
-Column Status= "Published"
-Column Date Published= <date of the day>
-Column "Blog link"= <{{blogArticles[0].url}}> 
-Column "BlueSky Link"= {{Bluesky Post[0].BlueSkyPostUrl}}
-Columnu "LinkedIn Link"= {{LinkedIn Post[0].LinkedInPosturl}}
-Notify to the user the changes in the row
-
-To use the tool google_sheets_update_spreadsheet_row, use the following:
-drive, worksheet and spreadsheet inputs are in the .env file
-row= "<{{ExcelFile[0].rownumber}}>, <string of the above settings>"
-
-
-
-#File to use locally
-tool/.env: environment file
-tool/upload.js to upload images and receive public facing URL
 
