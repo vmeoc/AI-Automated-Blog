@@ -1,1 +1,4 @@
-Agent automating various part of a blog article deployment. Cf agent.md for full details
+# AI Automated Blog
+
+Agent automating various parts of a blog article deployment.  
+See [agent.md](agent.md) for full details.
