@@ -86,7 +86,7 @@ Once the previous step is done,
 
 ### 4.6 Publish on Blogger
 
-* Convert markdown → HTML by yourself. Do not use external tool. 
+* Convert markdown → HTML by yourself. Do not use external tool. When you find a link in the article, set the html code to make sure it opens in a new tab when the user will click on it.
 * SEO Enhancements to apply during Markdown → HTML conversion
 **Apply Proper Heading Structure**
 Ensure only **one ************************`<h1>`************************ tag** is used (for the main title). Use `<h2>`, `<h3>`, etc., for subheadings to reflect the logical structure of the content.
