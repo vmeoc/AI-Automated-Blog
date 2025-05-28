@@ -131,15 +131,15 @@ For every `<img>` tag, include an `alt="..."` attribute with a relevant and desc
 
 ### 4.7 Share on LinkedIn (with image)
 
-Prepare the payload. For the content_description, use the file SocialNetworkPost.md:
+Prepare the payload. For the comment, use the file SocialNetworkPost.md:
 
 ```json
 {
   "instructions": "Share this article on LinkedIn",
-  "comment": "<catchy teaser>",
+  "comment": "to retrieve from SocialNetworkPost.md",
   "visibility__code": "Anyone",
   "content__title": "<title>",
-  "content__description": "<short description> to retrieve from SocialNetworkPost.md",
+  "content__description": "<generate a short description in 150 - 200 characters describing the blog post> ",
   "content__submitted_image_url": "${images[0].url}",
   "content__submitted_url": "${blogArticle.url}"
 }
@@ -196,13 +196,12 @@ Example payload (the one that worked):
 ```json
 {
   {
-  "instructions": "Update row number 4 in the Google Sheet. The sheet is named 'Feuille 1', within spreadsheet ID '1QPpaHXCfu5oHl8yu6WGls_sNGEQ_IpPMCjNPj8Hh-QI', located in 'My Google Drive'. The data to update in this row is: set the 'Title' column to 'From Chat to Action: The New Gen AI Revolution', 'Summary' column to 'There are 2 new buzz words in the Gen AI space: Agents and MCP. ...', 'Status' column to 'Published', 'Date published' column to '15/5/25', 'Blog Link' column to 'https://vincent-ai.blogspot.com/2025/05/the-rise-of-action-based-ai-mastering.html', 'BlueSky Link' column to 'https://bsky.app/profile/tibhgh.bsky.social/post/3lp7zzlu4ti2z', and 'LinkedIn Link' column to 'https://www.linkedin.com/feed/update/urn:li:share:7328832988134937600/'.",
+  "instructions": "Update row number 4 in the Google Sheet. The sheet is named 'Feuille 1', within spreadsheet ID '1QPpaHXCfu5oHl8yu6WGls_sNGEQ_IpPMCjNPj8Hh-QI', located in 'My Google Drive'. The data to update in this row is: set the 'Title' column to 'From Chat to Action: The New Gen AI Revolution',  'Status' column to 'Published', 'Date published' column to '15/5/25', 'Blog Link' column to 'https://vincent-ai.blogspot.com/2025/05/the-rise-of-action-based-ai-mastering.html', 'BlueSky Link' column to 'https://bsky.app/profile/tibhgh.bsky.social/post/3lp7zzlu4ti2z', and 'LinkedIn Link' column to 'https://www.linkedin.com/feed/update/urn:li:share:7328832988134937600/'.",
   "drive": "My Google Drive",
   "spreadsheet": "1QPpaHXCfu5oHl8yu6WGls_sNGEQ_IpPMCjNPj8Hh-QI",
   "worksheet": "Feuille 1",
   "row": "4",  
   "Title": "From Chat to Action: The New Gen AI Revolution",
-  "Summary": "There are 2 new buzz words in the Gen AI space: Agents and MCP. ...",
   "Status": "Published",
   "Date published": "15/5/25",
   "Blog Link": "https://vincent-ai.blogspot.com/2025/05/the-rise-of-action-based-ai-mastering.html",
